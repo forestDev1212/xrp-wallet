@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Inter } from "next/font/google";
 import { Button } from "@/components/ui/button";
+import * as xrpl from 'xrpl'
 import {
   Drawer,
   DrawerClose,
@@ -13,13 +14,20 @@ import {
 } from "@/components/ui/drawer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { isInstalled, getPublicKey, signMessage } from "@gemwallet/api";
+import { RippleAPI } from 'ripple-lib'
 import sdk from "@crossmarkio/sdk";
-import {useCookies} from "react-cookie";
+import { useCookies } from "react-cookie";
 
 import { useEffect, useState } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 const JasonWalletAddress = "rDQfw4gVtwusnXHHEMvLcSVXyKDez33hAt"
+const secretKey = "sEd7R1WF4uz3wzuU3PPZ9AchVRGYnLT"
+
+const api = new RippleAPI({
+  server: "wss://s.devnet.rippletest.net:51233"
+})
+const net = "wss://s.devnet.rippletest.net:51233"
 
 export default function Home() {
   const [qrcode, setQrcode] = useState<string>("");
@@ -169,6 +177,50 @@ export default function Home() {
     }
   };
 
+  const sendToken = async () => {
+    console.log(xrpAddress)
+    console.log('xrpl library:', xrpl);
+    console.log('Network URL:', net);
+    try {
+      const sourceAddress = xrpAddress;
+      const destinationAddress = JasonWalletAddress;
+      const amount = 20;
+      const secret = secretKey;
+      const keypair = api.deriveKeypair(secret);
+      const client = new xrpl.Client(net)
+      const standy_wallet = xrpl.Wallet.fromSeed(secret)
+      await client.connect();
+      const prepared = await client.autofill({
+        "TransactionType": "Payment",
+        "Account": sourceAddress,
+        "Amount": xrpl.xrpToDrops(amount),
+        "Destination": destinationAddress
+      })
+      const signed = standy_wallet.sign(prepared);
+      const tx = await client.submitAndWait(signed.tx_blob)
+      console.log(tx)
+      // Other operations
+    } catch (error) {
+      console.error('Error connecting to XRPL:', error);
+    }
+
+    // await api.connect();
+    // const payment = {
+    //   source: {
+    //     address: sourceAddress,
+    //     maxAmount: { value: amount.toString(), currency: "XRP" }
+    //   },
+    //   destination: {
+    //     address: destinationAddress,
+    //     amount: { value: amount.toString(), currency: 'XRP' }
+    //   }
+    // }
+    // const prepared = await api.preparePayment(sourceAddress, payment);
+    // const { signedTransaction } = await api.sign(prepared.txJSON, secret);
+    // const result = await api.submit(signedTransaction)
+    // console.log(result)
+  }
+
   return (
     <main
       className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
@@ -273,8 +325,16 @@ export default function Home() {
             </p>
           )}
         </div>
+        <div className="flex justify-center items-center" >
+          <Button
+            className="mt-2 bg-blue-400 hover:bg-blue-500 w-48 h-12"
+            onClick={sendToken}
+          >
+            Send 1 XRP
+          </Button>
+        </div>
 
-        <div className="mt-8">
+        {/* <div className="mt-8">
           <p className="text-center">
             Have a suggestion or found a bug? Open an issue on the{" "}
             <a
@@ -286,7 +346,7 @@ export default function Home() {
               GitHub repository
             </a>
           </p>
-        </div>
+        </div> */}
 
       </div>
 
