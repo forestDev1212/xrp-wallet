@@ -1,19 +1,8 @@
 import Image from "next/image";
 import { Inter } from "next/font/google";
 import { Button } from "@/components/ui/button";
-import * as xrpl from 'xrpl'
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import { Skeleton } from "@/components/ui/skeleton"
-import { isInstalled, getPublicKey, signMessage } from "@gemwallet/api";
+import { isInstalled, getPublicKey, signMessage,  } from "@gemwallet/api";
+import * as gemWalletApi from "@gemwallet/api";
 import { RippleAPI } from 'ripple-lib'
 import sdk from "@crossmarkio/sdk";
 import { useCookies } from "react-cookie";
@@ -21,13 +10,11 @@ import { useCookies } from "react-cookie";
 import { useEffect, useState } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
-const JasonWalletAddress = "rDQfw4gVtwusnXHHEMvLcSVXyKDez33hAt"
-const secretKey = "sEd7R1WF4uz3wzuU3PPZ9AchVRGYnLT"
 
-const api = new RippleAPI({
-  server: "wss://s.devnet.rippletest.net:51233"
-})
-const net = "wss://s.devnet.rippletest.net:51233"
+const WALLET_TYPE = {
+  GEM: "GEM WALLET",
+  CROSS_MARK: "CROSS MARK WALLET",
+}
 
 export default function Home() {
   const [xrpAddress, setXrpAddress] = useState<string>("");
@@ -38,6 +25,7 @@ export default function Home() {
   const [destinationAddress, setDestinationAddress] = useState<string>("");
   const [amount, setAmount] = useState<string>("0")
   const [message, setMessage] = useState<string>("")
+  const [connectedWallet, setConnectedWallet] = useState<string>('');
 
   useEffect(() => {
     if (window.innerWidth < 768) {
@@ -97,6 +85,7 @@ export default function Home() {
                         return;
                       }
                       setXrpAddress(address);
+                      setConnectedWallet(WALLET_TYPE.GEM)
                       if (enableJwt) {
                         setCookie("jwt", token, { path: "/" });
                       }
@@ -109,38 +98,63 @@ export default function Home() {
     });
   };
 
+  const handleConnectCrossmark = async () => {
+    //sign in first, then generate nonce
+    const hashUrl = "/api/auth/crossmark/hash";
+    const hashR = await fetch(hashUrl);
+    const hashJson = await hashR.json();
+    const hash = hashJson.hash;
+    const id = await sdk.methods.signInAndWait(hash)
+    console.log(id);
+    const address = id.response.data.address;
+    const pubkey = id.response.data.publicKey;
+    const signature = id.response.data.signature;
+    const checkSign = await fetch(
+      `/api/auth/crossmark/checksign?signature=${signature}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${hash}`,
+        },
+        body: JSON.stringify({
+          pubkey: pubkey,
+          address: address,
+        }),
+      }
+    );
+
+    const checkSignJson = await checkSign.json();
+    if (checkSignJson.hasOwnProperty("token")) {
+      setXrpAddress(address);
+      setConnectedWallet(WALLET_TYPE.CROSS_MARK)
+      if (enableJwt) {
+        setCookie("jwt", checkSignJson.token, { path: "/" });
+      }
+    }
+  };
+
 
   const sendToken = async () => {
-    try {
-      const sourceAddress = xrpAddress;
-      const secret = secretKey;
-      api.deriveKeypair(secret);
-      const client = new xrpl.Client(net)
-      const standy_wallet = xrpl.Wallet.fromSeed(secret)
-      await client.connect();
-      const prepared = await client.autofill({
-        "TransactionType": "Payment",
-        "Account": sourceAddress,
-        "Amount": xrpl.xrpToDrops(parseFloat(amount)),
-        "Destination": destinationAddress
-      })
-      const signed = standy_wallet.sign(prepared);
-      const tx = await client.submitAndWait(signed.tx_blob)
-      const { result } = tx
-      if (result.validated) {
-        setMessage(`
-        Successfully sent.
-        TransactionAddress : ${result.TxnSignature},
-        Amount : ${amount} XRP,
-        Fee : ${parseFloat(result.Fee || "0") / 1000000}XRP
-        `)
+    console.log(connectedWallet)
+    if (connectedWallet === WALLET_TYPE.GEM) {
+      const payment = {
+        amount: amount,
+        destination: destinationAddress,
       }
-      // Other operations
-    } catch (error) {
-      console.error('Error connecting to XRPL:', error);
-
+      const result = await gemWalletApi.sendPayment(payment);
+      console.log(result)
+    } else if (connectedWallet === WALLET_TYPE.CROSS_MARK) {
+      let id = sdk.sync.signAndSubmit({
+        TransactionType: 'Payment',
+        Account: xrpAddress,
+        Destination: destinationAddress,
+        Amount: amount, // XRP in drops
+      });
+      console.log(id)
+    } else {
+      return true
     }
-
   }
 
   return (
@@ -160,6 +174,12 @@ export default function Home() {
           onClick={handleConnectGem}
         >
           Connect with GEM
+        </Button>
+        <Button
+          className="mt-2 bg-orange-500 hover:bg-orange-600 w-48 h-12"
+          onClick={handleConnectCrossmark}
+        >
+          Connect with Crossmark
         </Button>
 
 
