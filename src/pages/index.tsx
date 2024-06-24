@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { Inter } from "next/font/google";
+import { useConnect } from "thirdweb/react";
 import { ConnectButton } from "thirdweb/react";
 import { Button } from "@/components/ui/button";
 import { isInstalled, getPublicKey, signMessage, } from "@gemwallet/api";
@@ -25,7 +26,6 @@ import {
 import { XummSdk } from 'xumm-sdk'
 import { cookieToInitialState } from 'wagmi'
 
-import { client } from "./client";
 import { config } from '@/config'
 import Web3ModalProvider from '@/context'
 
@@ -40,7 +40,8 @@ const WALLET_TYPE = {
   LEDGER: "LEDGER WALLET",
   BIFROST: "BIFROST WALLET",
 }
-
+const clientId = "3fb9e290940383ceef762ac629d0f4d6";
+const client = createThirdwebClient({ clientId });
 export default function Home() {
   const [qrcode, setQrcode] = useState<string>("");
   const [jumpLink, setJumpLink] = useState<string>("");
@@ -53,7 +54,7 @@ export default function Home() {
   const [amount, setAmount] = useState<string>("0")
   const [message, setMessage] = useState<string>("")
   const [connectedWallet, setConnectedWallet] = useState<string>('');
-
+  const { connect, isConnecting, error } = useConnect();
   useEffect(() => {
     if (window.innerWidth < 768) {
       setIsMobile(true);
@@ -202,23 +203,18 @@ export default function Home() {
 
   const handleConnectBifrost = async () => {
     try {
-      const clientId = "3fb9e290940383ceef762ac629d0f4d6"
-      const secretKey = "KcSb99Ry0o-JKzelWQLbM5aYkYMQFb1SuC9omf--uDr15pizPJr9-zV3c0dc39T907a0ZbSMVXbl2zibdXsESw"
+      const secretKey = "KcSb99Ry0o-JKzelWQLbM5aYkYMQFb1SuC9omf--uDr15pizPJr9-zV3c0dc39T907a0ZbSMVXbl2zibdXsESw";
 
       const wallet = createWallet("com.bifrostwallet"); // pass the wallet id
 
-      const client = createThirdwebClient({ clientId, });
+      // Log initialization details
+      console.log("Client initialized: ", client);
+      console.log("Wallet: ", wallet);
 
-
-      // if user has metamask installed, connect to it
-      if (injectedProvider("com.bifrostwallet")) {
+      if (await injectedProvider("com.bifrostwallet")) {
         await wallet.connect({ client });
-      }
-
-      // open wallet connect modal so user can scan the QR code and connect
-      else {
-        console.log(injectedProvider("com.bifrostwallet"))
-        console.log(client)
+      } else {
+        console.log("Using WalletConnect");
         await wallet.connect({
           client,
           walletConnect: { showQrModal: true },
@@ -363,7 +359,27 @@ export default function Home() {
 
         <Button
           className="mt-2 bg-green-500 hover:bg-green-600 w-48 h-12"
-          onClick={handleConnectBifrost}
+          onClick={() =>
+            connect(async () => {
+              const metamask = createWallet("io.metamask"); // pass the wallet id
+
+              // if user has metamask installed, connect to it
+              if (injectedProvider("io.metamask")) {
+                await metamask.connect({ client });
+              }
+
+              // open wallet connect modal so user can scan the QR code and connect
+              else {
+                await metamask.connect({
+                  client,
+                  walletConnect: { showQrModal: true },
+                });
+              }
+
+              // return the wallet
+              return metamask;
+            })
+          }
         >
           Connect with Bifrost
         </Button>
