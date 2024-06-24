@@ -1,11 +1,23 @@
 import Image from "next/image";
 import { Inter } from "next/font/google";
 import { Button } from "@/components/ui/button";
-import { isInstalled, getPublicKey, signMessage,  } from "@gemwallet/api";
+import { isInstalled, getPublicKey, signMessage, } from "@gemwallet/api";
 import * as gemWalletApi from "@gemwallet/api";
 import { RippleAPI } from 'ripple-lib'
 import sdk from "@crossmarkio/sdk";
+import { Skeleton } from "@/components/ui/skeleton"
 import { useCookies } from "react-cookie";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import { XummSdk } from 'xumm-sdk'
 
 import { useEffect, useState } from "react";
 
@@ -14,9 +26,14 @@ const inter = Inter({ subsets: ["latin"] });
 const WALLET_TYPE = {
   GEM: "GEM WALLET",
   CROSS_MARK: "CROSS MARK WALLET",
+  XUMUN: "XUMUN WALLET",
+  LEDGER: "LEDGER WALLET",
+  BIFROST: "BIFROST WALLET",
 }
 
 export default function Home() {
+  const [qrcode, setQrcode] = useState<string>("");
+  const [jumpLink, setJumpLink] = useState<string>("");
   const [xrpAddress, setXrpAddress] = useState<string>("");
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [cookies, setCookie, removeCookie] = useCookies(["jwt"]);
@@ -134,6 +151,62 @@ export default function Home() {
     }
   };
 
+  const getQrCode = async () => {
+    const payload = await fetch("/api/auth/xumm/createpayload");
+    const data = await payload.json();
+
+    setQrcode(data.payload.refs.qr_png);
+    setJumpLink(data.payload.next.always);
+
+    if (isMobile) {
+      //open in new tab
+      window.open(data.payload.next.always, "_blank");
+    }
+
+    const ws = new WebSocket(data.payload.refs.websocket_status);
+
+    ws.onmessage = async (e) => {
+      let responseObj = JSON.parse(e.data);
+      if (responseObj.signed !== null && responseObj.signed !== undefined) {
+        const payload = await fetch(
+          `/api/auth/xumm/getpayload?payloadId=${responseObj.payload_uuidv4}`
+        );
+        const payloadJson = await payload.json();
+
+        const hex = payloadJson.payload.response.hex;
+        const checkSign = await fetch(`/api/auth/xumm/checksign?hex=${hex}`);
+        const checkSignJson = await checkSign.json();
+        setXrpAddress(checkSignJson.xrpAddress)
+        setConnectedWallet(WALLET_TYPE.XUMUN)
+        if (enableJwt) {
+          setCookie("jwt", checkSignJson.token, { path: "/" });
+        }
+      } else {
+        console.log(responseObj);
+      }
+    };
+  };
+
+  const handleConnectBifrost = async () => {
+    try {
+      // const isInstalled = await bifrostApi.isInstalled();
+      // if (!isInstalled) {
+      //   console.log("Bifrost Wallet is not installed");
+      //   return;
+      // }
+
+      // const wallet = await bifrostApi.connect();
+      // if (wallet.isConnected) {
+      //   setXrpAddress(wallet.address); // Update the address state
+      //   setConnectedWallet("BIFROST WALLET"); // Update the wallet type state
+      // } else {
+      //   console.error("Failed to connect with Bifrost.");
+      // }
+    } catch (error) {
+      console.error('Error connecting to Bifrost Wallet:', error);
+    }
+  };
+
 
   const sendToken = async () => {
     console.log(connectedWallet)
@@ -152,8 +225,36 @@ export default function Home() {
         Amount: amount, // XRP in drops
       });
       console.log(id)
-    } else {
+    } else if (connectedWallet === WALLET_TYPE.XUMUN) {
+      const xumm = new XummSdk(
+        process.env.XUMM_KEY,
+        process.env.XUMM_KEY_SECRET
+      );
+
+      // You would pass these details from your front end, typically in the request body
+
+      const paymentPayload = {
+        txjson: {
+          TransactionType: "Payment",
+          Account: xrpAddress,
+          Destination: destinationAddress,
+          Amount: amount,  // Ensure this is in the correct format (drops for XRP)
+        },
+      };
+
+      const payloadResponse = await xumm.payload.create({
+        txjson: {
+          TransactionType: "Payment",
+          Destination: destinationAddress,
+          Amount: amount,
+        }
+      }, true);
+      console.log(payloadResponse)
       return true
+    } else if (connectedWallet === WALLET_TYPE.BIFROST) {
+
+    } else if (connectedWallet === WALLET_TYPE.LEDGER) {
+      
     }
   }
 
@@ -169,6 +270,41 @@ export default function Home() {
           This is a template for creating a wallet connect app with XRPL. Includes basic JWT authentication and 3 different wallet types.
         </p>
 
+        <Drawer>
+
+          <DrawerTrigger className="mt-8 bg-blue-500 hover:bg-blue-600 w-48 h-12 rounded-lg text-white" onClick={getQrCode}>
+            Connect with XAMAN
+          </DrawerTrigger>
+          <DrawerContent className="bg-white p-4">
+            <DrawerHeader className="flex flex-col items-center">
+              <DrawerTitle>Scann this qr code to sign in with xaman!</DrawerTitle>
+            </DrawerHeader>
+            <DrawerDescription className="flex flex-col items-center">
+              {
+                qrcode !== "" ? (
+                  <Image
+                    src={qrcode}
+                    alt="xaman qr code"
+                    width={200}
+                    height={200}
+                  />
+                ) : (
+                  <div className="flex flex-col space-y-3">
+                    <Skeleton className="h-[250px] w-[250px] rounded-xl bg-gray-300" />
+                  </div>
+                )
+              }
+              {jumpLink !== "" && (
+                <Button className="mt-2 bg-blue-400 hover:bg-blue-500 w-48 h-12" onClick={() => {
+                  window.open(jumpLink, "_blank");
+                }}>
+                  Open in Xaman
+                </Button>
+              )}
+            </DrawerDescription>
+          </DrawerContent>
+        </Drawer>
+
         <Button
           className="mt-2 bg-blue-400 hover:bg-blue-500 w-48 h-12"
           onClick={handleConnectGem}
@@ -180,6 +316,13 @@ export default function Home() {
           onClick={handleConnectCrossmark}
         >
           Connect with Crossmark
+        </Button>
+
+        <Button
+          className="mt-2 bg-green-500 hover:bg-green-600 w-48 h-12"
+          onClick={handleConnectBifrost}
+        >
+          Connect with Bifrost
         </Button>
 
 
