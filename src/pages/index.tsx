@@ -219,10 +219,10 @@ export default function Home() {
       else {
         console.log(injectedProvider("com.bifrostwallet"))
         console.log(client)
-        // await wallet.connect({
-        //   client,
-        //   walletConnect: { showQrModal: true },
-        // });
+        await wallet.connect({
+          client,
+          walletConnect: { showQrModal: true },
+        });
       }
       // const isInstalled = await bifrostApi.isInstalled();
       // if (!isInstalled) {
