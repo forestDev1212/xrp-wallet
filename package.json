@@ -32,6 +32,7 @@
     "ripple-lib": "^1.10.1",
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7",
+    "thirdweb": "^5.29.6",
     "vaul": "^0.9.0",
     "verify-xrpl-signature": "^4.1.5",
     "viem": "^2.16.2",

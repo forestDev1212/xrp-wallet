@@ -1,6 +1,18 @@
 import "@/styles/globals.css";
+import { ThirdwebProvider } from "thirdweb/react";
 import type { AppProps } from "next/app";
 
 export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />;
+  return (
+    <ThirdwebProvider>
+      <Component {...pageProps} />
+    </ThirdwebProvider>
+  )
 }
+
+// export default function App({ Component, pageProps }: AppProps) {
+//   return (
+//       <Component {...pageProps} />
+//   )
+// }
+
