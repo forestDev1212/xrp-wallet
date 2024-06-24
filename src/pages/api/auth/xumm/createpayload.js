@@ -2,7 +2,7 @@ const { XummSdk } = require("xumm-sdk");
 
 export default async function handler(req, res) {
     try {
-
+        console.log(process.env.XUMM_KEY_SECRET)
         const xumm = new XummSdk(
             process.env.XUMM_KEY,
             process.env.XUMM_KEY_SECRET
