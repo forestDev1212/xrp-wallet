@@ -14,10 +14,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThirdwebProvider } from "thirdweb/react";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -54,10 +52,6 @@ export default function Home() {
     if (window.innerWidth < 768) {
       setIsMobile(true);
     }
-    console.log(process.env.XUMM_KEY)
-    console.log(process.env.XUMM_KEY_SECRET)
-    console.log(process.env.NEXT_PUBLIC_XUMM_KEY)
-    console.log(process.env.NEXT_PUBLIC_XUMM_KEY_SECRET)
     if (cookies.jwt !== undefined && cookies.jwt !== null) {
       const url = "/api/auth";
       fetch(url, {
@@ -82,9 +76,7 @@ export default function Home() {
     isInstalled().then((response) => {
       if (response.result.isInstalled) {
         getPublicKey().then((response) => {
-          // console.log(`${response.result?.address} - ${response.result?.publicKey}`);
           const pubkey = response.result?.publicKey;
-          //fetch nonce from /api/gem/nonce?pubkey=pubkey
           fetch(
             `/api/auth/gem/nonce?pubkey=${pubkey}&address=${response.result?.address}`
           )
@@ -195,43 +187,6 @@ export default function Home() {
       }
     };
   };
-
-  const handleConnectBifrost = async () => {
-    try {
-
-      const wallet = createWallet("com.bifrostwallet"); // pass the wallet id
-
-      // Log initialization details
-      console.log("Client initialized: ", client);
-      console.log("Wallet: ", wallet);
-
-      if (await injectedProvider("com.bifrostwallet")) {
-        await wallet.connect({ client });
-      } else {
-        console.log("Using WalletConnect");
-        await wallet.connect({
-          client,
-          walletConnect: { showQrModal: true },
-        });
-      }
-      // const isInstalled = await bifrostApi.isInstalled();
-      // if (!isInstalled) {
-      //   console.log("Bifrost Wallet is not installed");
-      //   return;
-      // }
-
-      // const wallet = await bifrostApi.connect();
-      // if (wallet.isConnected) {
-      //   setXrpAddress(wallet.address); // Update the address state
-      //   setConnectedWallet("BIFROST WALLET"); // Update the wallet type state
-      // } else {
-      //   console.error("Failed to connect with Bifrost.");
-      // }
-    } catch (error) {
-      console.error('Error connecting to Bifrost Wallet:', error);
-    }
-  };
-
 
   const sendToken = async () => {
     console.log(connectedWallet)
