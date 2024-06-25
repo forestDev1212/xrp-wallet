@@ -16,10 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -52,7 +50,7 @@ export default function Home() {
   const [amount, setAmount] = useState<string>("0")
   const [connectedWallet, setConnectedWallet] = useState<string>('');
   const [showConnectButton, setShowConnectButton] = useState(false);
-  const { connect, isConnecting, error } = useConnect();
+  const { connect, isConnecting, } = useConnect();
 
   useEffect(() => {
     if (window.innerWidth < 768) {
@@ -77,14 +75,11 @@ export default function Home() {
     }
   }, []);
 
-
   const handleConnectGem = () => {
     isInstalled().then((response) => {
       if (response.result.isInstalled) {
         getPublicKey().then((response) => {
-          // console.log(`${response.result?.address} - ${response.result?.publicKey}`);
           const pubkey = response.result?.publicKey;
-          //fetch nonce from /api/gem/nonce?pubkey=pubkey
           fetch(
             `/api/auth/gem/nonce?pubkey=${pubkey}&address=${response.result?.address}`
           )
@@ -131,7 +126,6 @@ export default function Home() {
     const hashJson = await hashR.json();
     const hash = hashJson.hash;
     const id = await sdk.methods.signInAndWait(hash)
-    console.log(id);
     const address = id.response.data.address;
     const pubkey = id.response.data.publicKey;
     const signature = id.response.data.signature;
@@ -198,14 +192,12 @@ export default function Home() {
 
 
   const sendToken = async () => {
-    console.log(connectedWallet)
     if (connectedWallet === WALLET_TYPE.GEM) {
       const payment = {
         amount: amount,
         destination: destinationAddress,
       }
-      const result = await gemWalletApi.sendPayment(payment);
-      console.log(result)
+      await gemWalletApi.sendPayment(payment);
     } else if (connectedWallet === WALLET_TYPE.CROSS_MARK) {
       let id = sdk.sync.signAndSubmit({
         TransactionType: 'Payment',
@@ -213,11 +205,9 @@ export default function Home() {
         Destination: destinationAddress,
         Amount: amount, // XRP in drops
       });
-      console.log(id)
     } else if (connectedWallet === WALLET_TYPE.XUMUN) {
       const payload = await fetch(`/api/auth/xumm/sendWithXum?xrpAddress=${xrpAddress}&amount=${amount}&destinationAddress=${destinationAddress}`);
       const data = await payload.json()
-      console.log(data)
       setQrcode(data.payload.refs.qr_png);
       setJumpLink(data.payload.next.always);
 
@@ -249,10 +239,6 @@ export default function Home() {
         }
       };
       return true
-    } else if (connectedWallet === WALLET_TYPE.BIFROST) {
-
-    } else if (connectedWallet === WALLET_TYPE.LEDGER) {
-
     }
   }
 
@@ -363,8 +349,6 @@ export default function Home() {
                         showQrModal: true,
                       }
                     });
-                    console.log(wallet)
-                    console.log(wallet.getChain())
                     setShowConnectButton(true)
                   }
                   // Return the wallet to set it as the active wallet
