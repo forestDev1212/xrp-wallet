@@ -1,29 +1,32 @@
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useCookies } from "react-cookie";
 import { Inter } from "next/font/google";
-import { useConnect } from "thirdweb/react";
-import { ConnectButton } from "thirdweb/react";
-import { Button } from "@/components/ui/button";
 import { isInstalled, getPublicKey, signMessage, } from "@gemwallet/api";
-import { createThirdwebClient } from "thirdweb"
-import { createWallet, injectedProvider } from "thirdweb/wallets"
 import * as gemWalletApi from "@gemwallet/api";
 import sdk from "@crossmarkio/sdk";
-import { Skeleton } from "@/components/ui/skeleton"
-import { useCookies } from "react-cookie";
+import { useConnect } from "thirdweb/react";
+import { ConnectButton } from "thirdweb/react";
+import { createThirdwebClient } from "thirdweb"
+import { createWallet, injectedProvider } from "thirdweb/wallets"
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThirdwebProvider } from "thirdweb/react";
+
+import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { useEffect, useState } from "react";
+
 
 const inter = Inter({ subsets: ["latin"] });
-const queryClient = new QueryClient();
 
 const WALLET_TYPE = {
   GEM: "GEM WALLET",
@@ -32,8 +35,11 @@ const WALLET_TYPE = {
   LEDGER: "LEDGER WALLET",
   BIFROST: "BIFROST WALLET",
 }
+
 const clientId = process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID || "";
 const client = createThirdwebClient({ clientId });
+const queryClient = new QueryClient();
+
 export default function Home() {
   const [qrcode, setQrcode] = useState<string>("");
   const [jumpLink, setJumpLink] = useState<string>("");
@@ -44,14 +50,18 @@ export default function Home() {
   const [retrieved, setRetrieved] = useState<boolean>(false);
   const [destinationAddress, setDestinationAddress] = useState<string>("");
   const [amount, setAmount] = useState<string>("0")
-  const [message, setMessage] = useState<string>("")
   const [connectedWallet, setConnectedWallet] = useState<string>('');
   const [showConnectButton, setShowConnectButton] = useState(false);
   const { connect, isConnecting, error } = useConnect();
+
   useEffect(() => {
     if (window.innerWidth < 768) {
       setIsMobile(true);
     }
+    console.log(process.env.XUMM_KEY)
+    console.log(process.env.XUMM_KEY_SECRET)
+    console.log(process.env.NEXT_PUBLIC_XUMM_KEY)
+    console.log(process.env.NEXT_PUBLIC_XUMM_KEY_SECRET)
     if (cookies.jwt !== undefined && cookies.jwt !== null) {
       const url = "/api/auth";
       fetch(url, {
@@ -69,14 +79,16 @@ export default function Home() {
           }
         });
     }
-  }, [cookies.jwt]);
+  }, []);
 
 
   const handleConnectGem = () => {
     isInstalled().then((response) => {
       if (response.result.isInstalled) {
         getPublicKey().then((response) => {
+          // console.log(`${response.result?.address} - ${response.result?.publicKey}`);
           const pubkey = response.result?.publicKey;
+          //fetch nonce from /api/gem/nonce?pubkey=pubkey
           fetch(
             `/api/auth/gem/nonce?pubkey=${pubkey}&address=${response.result?.address}`
           )
@@ -187,6 +199,7 @@ export default function Home() {
       }
     };
   };
+
 
   const sendToken = async () => {
     console.log(connectedWallet)
@@ -377,6 +390,7 @@ export default function Home() {
           </ThirdwebProvider>
         </QueryClientProvider>
 
+
         <div className="mt-8">
           {xrpAddress !== "" && (
             <p className="text-center">
@@ -449,16 +463,10 @@ export default function Home() {
                     </svg>
                   </Button>
                 </div>
-
               </div>
             </div>
           )
         }
-        <div className=" flex justify-center items-center" >
-          <p>
-            {message}
-          </p>
-        </div>
       </div>
     </main>
   );
