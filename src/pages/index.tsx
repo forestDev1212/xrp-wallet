@@ -378,7 +378,7 @@ export default function Home() {
             >
               {isConnecting ? "Connecting..." : "Connect with Ledger"}
             </Button>
-            {showConnectButton && (
+            <div className=" my-5 flex justify-center items-center" >
               <ConnectButton
                 client={client}
                 appMetadata={{
@@ -386,6 +386,17 @@ export default function Home() {
                   url: "https://example.com",
                 }}
               />
+            </div>
+            {showConnectButton && (
+              <div className=" my-5 flex justify-center items-center" >
+                <ConnectButton
+                  client={client}
+                  appMetadata={{
+                    name: "Example App",
+                    url: "https://example.com",
+                  }}
+                />
+              </div>
             )}
           </ThirdwebProvider>
         </QueryClientProvider>
