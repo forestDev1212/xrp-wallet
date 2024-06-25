@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { isInstalled, getPublicKey, signMessage, } from "@gemwallet/api";
 import { createThirdwebClient } from "thirdweb"
 import { createWallet, injectedProvider } from "thirdweb/wallets"
+import { defineChain } from 'thirdweb'
 import * as gemWalletApi from "@gemwallet/api";
 import { RippleAPI } from 'ripple-lib'
 import sdk from "@crossmarkio/sdk";
@@ -54,6 +55,7 @@ export default function Home() {
   const [amount, setAmount] = useState<string>("0")
   const [message, setMessage] = useState<string>("")
   const [connectedWallet, setConnectedWallet] = useState<string>('');
+  const [showConnectButton, setShowConnectButton] = useState(false);
   const { connect, isConnecting, error } = useConnect();
   useEffect(() => {
     if (window.innerWidth < 768) {
@@ -200,6 +202,10 @@ export default function Home() {
       }
     };
   };
+
+  useEffect(() => {
+    console.log(client)
+  }, [client])
 
   const handleConnectBifrost = async () => {
     try {
@@ -360,27 +366,59 @@ export default function Home() {
           className="mt-2 bg-green-500 hover:bg-green-600 w-48 h-12"
           onClick={() =>
             connect(async () => {
-              const metamask = createWallet("io.metamask"); // pass the wallet id
+              const wallet = createWallet("com.bifrostwallet"); // pass the wallet id
 
-              // if user has metamask installed, connect to it
-              if (injectedProvider("io.metamask")) {
-                await metamask.connect({ client });
+              // if user has wallet installed, connect to it
+              if (injectedProvider("com.bifrostwallet")) {
+                await wallet.connect({ client });
+                setShowConnectButton(true)
               }
 
               // open wallet connect modal so user can scan the QR code and connect
               else {
-                await metamask.connect({
+                await wallet.connect({
                   client,
-                  walletConnect: { showQrModal: true },
+                  walletConnect: {
+                    showQrModal: true,
+                  }
                 });
+                setShowConnectButton(true)
               }
-
               // return the wallet
-              return metamask;
+              return wallet;
             })
           }
         >
           Connect with Bifrost
+        </Button>
+        <Button
+          className="mt-2 bg-blue-500 hover:bg-blue-600 w-48 h-12"
+          onClick={() =>
+            connect(async () => {
+              const wallet = createWallet("com.ledger"); // pass the wallet id
+
+              // Check if the user has the wallet installed and connect to it
+              if (injectedProvider("com.ledger")) {
+                await wallet.connect({ client });
+                setShowConnectButton(true)
+              } else {
+                // If the wallet is not detected, open WalletConnect modal for the user to scan the QR code and connect
+                await wallet.connect({
+                  client,
+                  walletConnect: {
+                    showQrModal: true,
+                  }
+                });
+                console.log(wallet)
+                console.log(wallet.getChain())
+                setShowConnectButton(true)
+              }
+              // Return the wallet to set it as the active wallet
+              return wallet;
+            })
+          }
+        >
+          {isConnecting ? "Connecting..." : "Connect with Ledger"}
         </Button>
 
 
@@ -461,13 +499,15 @@ export default function Home() {
             </div>
           )
         }
-        {/* <ConnectButton
-          client={client}
-          appMetadata={{
-            name: "Example App",
-            url: "https://example.com",
-          }}
-        /> */}
+        {showConnectButton && (
+          <ConnectButton
+            client={client}
+            appMetadata={{
+              name: "Example App",
+              url: "https://example.com",
+            }}
+          />
+        )}
         <div className=" flex justify-center items-center" >
           <p>
             {message}
