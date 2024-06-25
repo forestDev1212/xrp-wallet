@@ -251,7 +251,7 @@ export default function Home() {
           Welcome to XRPL wallet connect template!
         </h1>
         <p className="text-center mt-4 text-lg">
-          This is a template for creating a wallet connect app with XRPL. Includes basic JWT authentication and 3 different wallet types.
+          This is a template for creating a wallet connect app with XRPL. Includes basic JWT authentication and 5 different wallet types.
         </p>
 
         <Drawer>
@@ -356,7 +356,7 @@ export default function Home() {
                 })
               }
             >
-              {isConnecting ? "Connecting..." : "Connect with Ledger"}
+              Connect with Ledger
             </Button>
             {showConnectButton && (
               <div className=" my-5 flex justify-center items-center" >
