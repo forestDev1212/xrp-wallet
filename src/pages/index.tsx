@@ -75,7 +75,7 @@ export default function Home() {
           }
         });
     }
-  }, []);
+  }, [cookies.jwt]);
 
 
   const handleConnectGem = () => {
@@ -195,10 +195,6 @@ export default function Home() {
       }
     };
   };
-
-  useEffect(() => {
-    console.log(client)
-  }, [client])
 
   const handleConnectBifrost = async () => {
     try {
