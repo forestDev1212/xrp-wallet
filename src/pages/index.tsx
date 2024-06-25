@@ -40,7 +40,7 @@ const WALLET_TYPE = {
   LEDGER: "LEDGER WALLET",
   BIFROST: "BIFROST WALLET",
 }
-const clientId = "3fb9e290940383ceef762ac629d0f4d6";
+const clientId = process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID || "";
 const client = createThirdwebClient({ clientId });
 export default function Home() {
   const [qrcode, setQrcode] = useState<string>("");
@@ -203,7 +203,6 @@ export default function Home() {
 
   const handleConnectBifrost = async () => {
     try {
-      const secretKey = "KcSb99Ry0o-JKzelWQLbM5aYkYMQFb1SuC9omf--uDr15pizPJr9-zV3c0dc39T907a0ZbSMVXbl2zibdXsESw";
 
       const wallet = createWallet("com.bifrostwallet"); // pass the wallet id
 
