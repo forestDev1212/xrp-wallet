@@ -58,10 +58,6 @@ export default function Home() {
     if (window.innerWidth < 768) {
       setIsMobile(true);
     }
-    console.log(process.env.XUMM_KEY)
-    console.log(process.env.XUMM_KEY_SECRET)
-    console.log(process.env.NEXT_PUBLIC_XUMM_KEY)
-    console.log(process.env.NEXT_PUBLIC_XUMM_KEY_SECRET)
     if (cookies.jwt !== undefined && cookies.jwt !== null) {
       const url = "/api/auth";
       fetch(url, {

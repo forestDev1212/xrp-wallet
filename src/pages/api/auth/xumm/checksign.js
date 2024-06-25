@@ -7,7 +7,7 @@ export default function handler(req, res) {
         if (resp.signatureValid === true) {
             // res.status(200).json({xrpAddress:resp.signedBy});
             const xrpAddress = resp.signedBy;
-            const encrypted = jwt.sign({ address: xrpAddress }, "ENC_KEY");
+            const encrypted = jwt.sign({ address: xrpAddress }, "NEXT_PUBLIC_ENC_KEY");
             res.status(200).json({xrpAddress:resp.signedBy, token:encrypted});
         }
     } catch (error) {

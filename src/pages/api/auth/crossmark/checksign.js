@@ -15,7 +15,7 @@ export default async function handler(req, res) {
             public_key
         )
         if (isVerified) {
-            const token = jwt.sign({ xrpAddress: address }, process.env.ENC_KEY);
+            const token = jwt.sign({ xrpAddress: address }, process.env.NEXT_PUBLIC_ENC_KEY);
             res.status(200).json({ token: token, address: address });
         } else {
             res.status(400).json({ error: "Signature not verified" });

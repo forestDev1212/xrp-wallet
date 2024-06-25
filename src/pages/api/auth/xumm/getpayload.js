@@ -3,8 +3,8 @@ const { XummSdk } = require("xumm-sdk");
 export default async function handler(req, res) {
     try {
         const xumm = new XummSdk(
-            process.env.XUMM_KEY,
-            process.env.XUMM_KEY_SECRET
+            process.env.NEXT_PUBLIC_XUMM_KEY,
+            process.env.NEXT_PUBLIC_XUMM_KEY_SECRET
         );
         
         const payload = await xumm.payload.get(req.query.payloadId)
