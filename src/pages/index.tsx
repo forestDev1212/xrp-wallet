@@ -1,5 +1,3 @@
-'use client'
-
 import Image from "next/image";
 import { Inter } from "next/font/google";
 import { useConnect } from "thirdweb/react";
@@ -8,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { isInstalled, getPublicKey, signMessage, } from "@gemwallet/api";
 import { createThirdwebClient } from "thirdweb"
 import { createWallet, injectedProvider } from "thirdweb/wallets"
-import { defineChain } from 'thirdweb'
 import * as gemWalletApi from "@gemwallet/api";
-import { RippleAPI } from 'ripple-lib'
 import sdk from "@crossmarkio/sdk";
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCookies } from "react-cookie";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThirdwebProvider } from "thirdweb/react";
 import {
   Drawer,
   DrawerClose,
@@ -24,15 +22,10 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { XummSdk } from 'xumm-sdk'
-import { cookieToInitialState } from 'wagmi'
-
-import { config } from '@/config'
-import Web3ModalProvider from '@/context'
-
 import { useEffect, useState } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
+const queryClient = new QueryClient();
 
 const WALLET_TYPE = {
   GEM: "GEM WALLET",
@@ -361,66 +354,77 @@ export default function Home() {
         >
           Connect with Crossmark
         </Button>
+        <QueryClientProvider client={queryClient}>
+          <ThirdwebProvider>
+            <Button
+              className="mt-2 bg-green-500 hover:bg-green-600 w-48 h-12"
+              onClick={() =>
+                connect(async () => {
+                  const wallet = createWallet("com.bifrostwallet"); // pass the wallet id
 
-        <Button
-          className="mt-2 bg-green-500 hover:bg-green-600 w-48 h-12"
-          onClick={() =>
-            connect(async () => {
-              const wallet = createWallet("com.bifrostwallet"); // pass the wallet id
-
-              // if user has wallet installed, connect to it
-              if (injectedProvider("com.bifrostwallet")) {
-                await wallet.connect({ client });
-                setShowConnectButton(true)
-              }
-
-              // open wallet connect modal so user can scan the QR code and connect
-              else {
-                await wallet.connect({
-                  client,
-                  walletConnect: {
-                    showQrModal: true,
+                  // if user has wallet installed, connect to it
+                  if (injectedProvider("com.bifrostwallet")) {
+                    await wallet.connect({ client });
+                    setShowConnectButton(true)
                   }
-                });
-                setShowConnectButton(true)
-              }
-              // return the wallet
-              return wallet;
-            })
-          }
-        >
-          Connect with Bifrost
-        </Button>
-        <Button
-          className="mt-2 bg-blue-500 hover:bg-blue-600 w-48 h-12"
-          onClick={() =>
-            connect(async () => {
-              const wallet = createWallet("com.ledger"); // pass the wallet id
 
-              // Check if the user has the wallet installed and connect to it
-              if (injectedProvider("com.ledger")) {
-                await wallet.connect({ client });
-                setShowConnectButton(true)
-              } else {
-                // If the wallet is not detected, open WalletConnect modal for the user to scan the QR code and connect
-                await wallet.connect({
-                  client,
-                  walletConnect: {
-                    showQrModal: true,
+                  // open wallet connect modal so user can scan the QR code and connect
+                  else {
+                    await wallet.connect({
+                      client,
+                      walletConnect: {
+                        showQrModal: true,
+                      }
+                    });
+                    setShowConnectButton(true)
                   }
-                });
-                console.log(wallet)
-                console.log(wallet.getChain())
-                setShowConnectButton(true)
+                  // return the wallet
+                  return wallet;
+                })
               }
-              // Return the wallet to set it as the active wallet
-              return wallet;
-            })
-          }
-        >
-          {isConnecting ? "Connecting..." : "Connect with Ledger"}
-        </Button>
+            >
+              Connect with Bifrost
+            </Button>
+            <Button
+              className="mt-2 bg-blue-500 hover:bg-blue-600 w-48 h-12"
+              onClick={() =>
+                connect(async () => {
+                  const wallet = createWallet("com.ledger"); // pass the wallet id
 
+                  // Check if the user has the wallet installed and connect to it
+                  if (injectedProvider("com.ledger")) {
+                    await wallet.connect({ client });
+                    setShowConnectButton(true)
+                  } else {
+                    // If the wallet is not detected, open WalletConnect modal for the user to scan the QR code and connect
+                    await wallet.connect({
+                      client,
+                      walletConnect: {
+                        showQrModal: true,
+                      }
+                    });
+                    console.log(wallet)
+                    console.log(wallet.getChain())
+                    setShowConnectButton(true)
+                  }
+                  // Return the wallet to set it as the active wallet
+                  return wallet;
+                })
+              }
+            >
+              {isConnecting ? "Connecting..." : "Connect with Ledger"}
+            </Button>
+            {showConnectButton && (
+              <ConnectButton
+                client={client}
+                appMetadata={{
+                  name: "Example App",
+                  url: "https://example.com",
+                }}
+              />
+            )}
+          </ThirdwebProvider>
+        </QueryClientProvider>
 
         <div className="mt-8">
           {xrpAddress !== "" && (
@@ -499,15 +503,6 @@ export default function Home() {
             </div>
           )
         }
-        {showConnectButton && (
-          <ConnectButton
-            client={client}
-            appMetadata={{
-              name: "Example App",
-              url: "https://example.com",
-            }}
-          />
-        )}
         <div className=" flex justify-center items-center" >
           <p>
             {message}
