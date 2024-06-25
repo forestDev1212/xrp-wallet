@@ -358,15 +358,6 @@ export default function Home() {
             >
               {isConnecting ? "Connecting..." : "Connect with Ledger"}
             </Button>
-            <div className=" my-5 flex justify-center items-center" >
-              <ConnectButton
-                client={client}
-                appMetadata={{
-                  name: "Example App",
-                  url: "https://example.com",
-                }}
-              />
-            </div>
             {showConnectButton && (
               <div className=" my-5 flex justify-center items-center" >
                 <ConnectButton
